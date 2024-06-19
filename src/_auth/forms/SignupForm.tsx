@@ -8,6 +8,7 @@ import { SignupValidation } from '@/lib/validation'
 import { z } from 'zod'
 import { Loader } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { createUserAccount } from '@/lib/appwrite/api'
 
 
 const SignupForm = () => {
@@ -31,6 +32,8 @@ const SignupForm = () => {
     console.log(values) ;
 
     const newUser = await createUserAccount(values);
+
+    console.log(newUser);
   }
 
   return (
