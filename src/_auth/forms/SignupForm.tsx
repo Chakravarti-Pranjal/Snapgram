@@ -1,4 +1,6 @@
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import { useToast } from '@/components/ui/use-toast' ;
 
 import { useForm } from 'react-hook-form'
 import { Button } from "@/components/ui/button"
@@ -7,14 +9,24 @@ import { Input } from "@/components/ui/input"
 import { SignupValidation } from '@/lib/validation'
 import { z } from 'zod'
 import { Loader } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { createUserAccount } from '@/lib/appwrite/api'
+import { Link, useNavigate } from 'react-router-dom'
+import { useCreateUserAccount, useSignInAccount } from '@/lib/react-query/queriesAndMutation';
+import { useUserContext } from '@/context/AuthContext';
 
 
 const SignupForm = () => {
 
+  // Defing Toast
+  const { toast } = useToast()
+  const { checkAuthUser, isPending: isUserLoading } = useUserContext() ;
+  const navigate = useNavigate()
+
   // Defining loading
-  const isLoading = false ;
+  //const isPending = false ;
+
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateUserAccount();
+
+  const { mutateAsync: signInAccount, isPending: isSigningIn }= useSignInAccount() ;
 
 // Define the form
   const form = useForm<z.infer<typeof SignupValidation>>({
@@ -33,7 +45,31 @@ const SignupForm = () => {
 
     const newUser = await createUserAccount(values);
 
-    console.log(newUser);
+    //console.log(newUser);
+
+    if(!newUser){
+      return  toast({titlle : "Sign up failed. Please try again"})
+    
+    }
+
+    const session = await signInAccount({
+      email: values.email,
+      password: values.password,
+    });
+
+    if(!session){
+      return toast({title : "Sign in failed. Please try again" })
+    }
+
+    const isLoggedIn = await checkAuthUser();
+
+    if(isLoggedIn) {
+      form.reset();
+
+      navigate('/')
+    }else {
+      return toast({ title: 'Sign up failed. Please try again.'})
+    }
   }
 
   return (
@@ -46,6 +82,7 @@ const SignupForm = () => {
 
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3 w-full mt-2">
+             
               {/* for name field */}
               <FormField
                 control={form.control}
@@ -113,7 +150,7 @@ const SignupForm = () => {
 
 
               <Button type="submit" className='shad-button_primary'>
-                {isLoading ? (
+                {isCreatingAccount ? (
                     <div className='flex-center gap-2'>
                       <Loader /> Loading...
                     </div>
