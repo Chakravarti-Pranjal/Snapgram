@@ -1,16 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-
-import { useToast } from '@/components/ui/use-toast' ;
-
 import { useForm } from 'react-hook-form'
-import { Button } from "@/components/ui/button"
+import { Link, useNavigate } from 'react-router-dom'
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { useToast } from '@/components/ui/use-toast' ;
 import { Input } from "@/components/ui/input"
-import { SignupValidation } from '@/lib/validation'
+import { Button } from "@/components/ui/button"
+
+import { SigninValidation } from '@/lib/validation'
 import { z } from 'zod'
 import { Loader } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useCreateUserAccount, useSignInAccount } from '@/lib/react-query/queriesAndMutation';
+import { useSignInAccount } from '@/lib/react-query/queriesAndMutation';
 import { useUserContext } from '@/context/AuthContext';
 
 
@@ -18,19 +18,15 @@ const SigninForm = () => {
 
   // Defing Toast
   const { toast } = useToast()
-  const { checkAuthUser, isPending: isUserLoading } = useUserContext() ;
   const navigate = useNavigate()
+  const { checkAuthUser, isLoading: isUserLoading } = useUserContext() ;
 
-  // Defining loading
-  //const isPending = false ;
-
-  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateUserAccount();
-
-  const { mutateAsync: signInAccount, isPending: isSigningIn }= useSignInAccount() ;
+  // Query
+  const { mutateAsync: signInAccount }= useSignInAccount() ;
 
 // Define the form
-  const form = useForm<z.infer<typeof SignupValidation>>({
-    resolver : zodResolver(SignupValidation),
+  const form = useForm<z.infer<typeof SigninValidation>>({
+    resolver : zodResolver(SigninValidation),
     defaultValues : {
       email : '',
       password : ''
@@ -38,25 +34,14 @@ const SigninForm = () => {
   })
 
   // Define a submit handler
-  async function onSubmit(values: z.infer<typeof SignupValidation>){
-    console.log(values) ;
-
-    const newUser = await createUserAccount(values);
-
-    //console.log(newUser);
-
-    if(!newUser){
-      return  toast({titlle : "Sign up failed. Please try again"})
-    
-    }
-
-    const session = await signInAccount({
+  async function onSubmit(values: z.infer<typeof SigninValidation>){
+     const session = await signInAccount({
       email: values.email,
       password: values.password,
-    });
+    })
 
-    if(!session){
-      return toast({title : "Sign in failed. Please try again" })
+     if(!session){
+      return toast({title : "Sign in failed. Please try again." })
     }
 
     const isLoggedIn = await checkAuthUser();
@@ -64,10 +49,13 @@ const SigninForm = () => {
     if(isLoggedIn) {
       form.reset();
 
+      console.log('Navigating')
+
       navigate('/')
     }else {
       return toast({ title: 'Sign up failed. Please try again.'})
-    }
+    }  
+
   }
 
   return (
@@ -116,7 +104,7 @@ const SigninForm = () => {
 
 
               <Button type="submit" className='shad-button_primary'>
-                {isCreatingAccount ? (
+                {isUserLoading ? (
                     <div className='flex-center gap-2'>
                       <Loader /> Loading...
                     </div>
@@ -125,7 +113,7 @@ const SigninForm = () => {
               </Button>
 
               <p className="text-small regular text-light-2 text-center mt-2">
-                Already have an account?
+                Don't' have an account?
                 <Link to="/sign-up" className='text-primary-500 text-small-semibold ml-1'>Sign up</Link>
               </p>
             </form>
